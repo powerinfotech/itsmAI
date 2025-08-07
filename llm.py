@@ -21,28 +21,35 @@ def generate_sql(question: str) -> str:
     
     # 프롬프트 설정
     prompt = PromptTemplate.from_template(
-"""[요구사항]
-1.사용자의 질문을 받으면, 먼저 문법적으로 올바른 {dialect} 쿼리를 생성하고 쿼리 결과를 분석해 답변을 제공하세요.  
-2.사용자가 명시적으로 원하는 결과 수를 지정하지 않았다면 항상 쿼리 결과를 최대 {top_k}개로 제한하세요.  
-3.관련성이 높은 컬럼을 기준으로 정렬하여 가장 유의미한 결과를 반환하세요.
-4.오더순서는 첫번쨰 컬럼부터 차례대로 오름차순으로 정렬하세요.
-5.del_yn = '0'인 컬럼만 조회하세요.
-6.비교할떄는 like 사용하세요.
-7.응답형식으로만 응답하세요.
-8.컬럼명은 영어고 alies를 한글로 해주고 띄어쓰기시 _로 해주세요.
-9.조회하는 컬럼명이 _cd로 끝날경우 tb_com_cd테이블의 cm_std_cd와 조인하여 cd_nm으로 조회하세요.
-10.쿼리에서 날짜를 비교시 컬림의 data_Type이 timestamp일경우 to_char(컬럼, 'YYYY-MM-DD')로 변환하여 날짜만 비교하세요.
-11.order by 와 group by 는 테이블의 컬럼명으로 사용하세요.
-12. tb_alrm_user 테이블은 조회하지 마세요.
-[응답 형식]
-SQLQuery: "실행할 SQL 쿼리"
+        """
+        당신은 SQLGen 어시스턴트 입니다. {dialect} 문법에 맞는 SQL 쿼리를 작성하는 어시스턴트 역할을 수행하세요.
 
-[사용 가능한 테이블]
-{table_info}
+        [테이블 스키마]
+        {table_info}
 
+        [요구사항]
+        1.사용자의 질문을 받으면, 먼저 문법적으로 올바른 {dialect} 쿼리를 생성하고 쿼리 결과를 분석해 답변을 제공하세요.  
+        2.사용자가 명시적으로 원하는 결과 수를 지정하지 않았다면 항상 쿼리 결과를 최대 {top_k}개로 제한하세요.  
+        3.관련성이 높은 컬럼을 기준으로 정렬하여 가장 유의미한 결과를 반환하세요.
+        4.오더순서는 첫번쨰 컬럼부터 차례대로 오름차순으로 정렬하세요.
+        5.SR 관련 질문이니 tb_fail_rqst 테이블을 기준으로 조회하세요.
+        6.tb_fail_rqst 테이블의 del_yn 칼럼이 '0'인 컬럼만 조회하세요.
+        7.유사어 비교할떄는 like 연산만 사용하세요.(양쪽에 `%` 와일드카드 허용)
+        8.응답형식으로만 응답하세요.
+        9.컬럼명은 영어고 alies를 한글로 해주고 띄어쓰기시 _로 해주세요.
+        10.조회하는 컬럼명이 _cd로 끝날경우 tb_com_cd테이블의 cm_std_cd와 조인하여 cd_nm으로 조회하세요.
+        11.쿼리에서 날짜를 비교시 컬림의 data_Type이 timestamp일경우 to_char(컬럼, 'YYYY-MM-DD')로 변환하여 날짜만 비교하세요.
+        12.order by 와 group by 는 테이블의 컬럼명으로 사용하세요.
 
-Question: {input}"""
+        [응답 형식]
+        SQLQuery: "실행할 SQL 쿼리"
+    
+    
+        Question: {input}
+        """
     ).partial(dialect=db.dialect)
+
+    print("db.dialect",db.dialect)
     
     # 체인 생성
     agent = create_sql_query_chain(llm, db, prompt=prompt)
@@ -96,10 +103,12 @@ def generate_dashboard(data: dict) -> str:
     [응답 형식]
     <html>
     <body>
-    <h1>답변</h1>
+    <h1>대시보드 명칭</h1>
     <table>
-    <tr>
-    <td>데이터</td>
+        <thead>칼럼</thead>
+        <tbody>데이터</tbody>
+    </table>
+    <div id="chart"/>
     </html>
     """)
 
